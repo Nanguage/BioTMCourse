@@ -1,0 +1,69 @@
+\documentclass{beamer}
+
+%\usepackage[noindent,nocap]{ctex}
+%\usepackage[scheme=plain]{ctex}
+
+\usepackage[style=verbose,backend=biber,maxbibnames=99,maxcitenames=1]{biblatex}
+\addbibresource{slidex.bib}
+
+%% modify fullcite definition, let it print all authors
+%\preto\fullcite{\AtNextCite{\defcounter{maxnames}{99}}}
+
+% add new command for print a publication (print all authors)
+\newcommand{\printpublication}[1]{\AtNextCite{\defcounter{maxnames}{99}}\fullcite{#1}}
+
+\usepackage{xcolor}
+
+\usetheme{Boadilla}
+
+\title{HPO Enrichment Analyze}
+%\subtitle{}
+
+\author{Weize Xu}
+\institute{Huazhong Agriculture University}
+\date{\today}
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}
+    \frametitle{Outline}
+    \tableofcontents
+\end{frame}
+
+\section{Data}
+
+\begin{frame}
+    \frametitle{HPO dataset}
+    blabla
+    HPO dataset\footcite{kohler2018expansion}
+\end{frame}
+
+\section{Method}
+
+\begin{frame}
+    \frametitle{Enrichment}
+    bla
+\end{frame}
+
+\begin{frame}
+    \frametitle{Implementation}
+    
+\end{frame}
+
+\section{}
+
+\begin{frame}
+    Thank you!
+\end{frame}
+
+\section{Reference}
+\begin{frame}
+    \frametitle{Reference}
+    \def\bibfont{\tiny}
+    \printbibliography
+\end{frame}
+
+\end{document}
