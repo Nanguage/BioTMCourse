@@ -14,6 +14,7 @@ class GSEA(object):
         If not specified, will download it automatically.
     """
     def __init__(self, gaf=None):
+        from scipy import stats
         if not gaf_file:  # download HPO GAF
             from hpoea.utils.download import get_hpo_gaf
             gaf = get_hpo_gaf()
@@ -36,11 +37,75 @@ class GSEA(object):
         ------
         enrichment_table : pandas.DataFrame
         """
+        import pandas as pd
         gene_ids = self._to_entrez_id(gene_list, gene_id_source)
-        possi_items = self._get_all_possible_items(gene_ids)
+        possi_terms = self._get_all_possible_terms(gene_ids)
 
-    def _get_all_possible_items(self, gene_list):
-        pass
+        pvals_uncorr = []
+        counts = []
+        for term_id in possi_terms:  # calculate the p-value of each possible terms
+            counts = self._get_counts(term_id)
+            pval = _calc_pvalue(*counts)
+            pvals_uncorr.append(pval)
+            counts.append(counts)
+        study_count, n_study, population_count, n_population = zip(*counts)
+        
+        enrichment_table = pd.DataFrame({
+            'HPO_term_ID': possi_terms,
+            'study_count': study_count,
+            'n_study': n_study,
+            'population_count': population_count,
+            'n_population': n_population,
+            'pvalue': pvals_uncorr,
+        })
+        self.enrichment_table = enrichment_table
+
+    def multiple_test_corretion(self, method='fdr_bh'):
+        """Perform multiple test correction, adjust the p-value.
+
+        Args
+        ----
+        method : method, optional
+            Methods used for correction. default 'fdr_bh'.
+            All supported method list see `statsmodels.stats.multitest.multipletests`:
+                http://www.statsmodels.org/devel/generated/statsmodels.stats.multitest.multipletests.html#statsmodels.stats.multitest.multipletests
+        """
+        from statsmodels.stats.multitest import multipletests
+        df = self.enrichment_table
+        pvals = df['pvalue']
+        padjs = multipletests(pvals)
+        df['padj'] = padjs
+
+    def _calc_pvalue(self, study_count, study_n, pop_count, pop_n):
+        """Calculate uncorrected p-value.
+
+        See Also
+        --------
+        scipy.stats.fisher_exact :
+            http://docs.scipy.org/doc/scipy-0.17.0/reference/generated/scipy.stats.fisher_exact.html
+        """
+        avar = study_count
+        bvar = study_n - study_count
+        cvar = pop_count - study_count
+        dvar = pop_n - pop_count - bvar
+        assert cvar >= 0, "(pop_count - study_count) must large than zero."
+        oddsratio, p_val = stats.fisher_exact([[avar, bvar], [cvar, dvar]])
+        return p_val
+
+    def _get_counts(self, term_id):
+        """Get the counts value used for fisher exact test."""
+        pop_cnt = self.gaf[self.gaf.HPO_Term_ID == term_id].shape[0]
+        pop_n = self.gaf.shape[0]
+        study_cnt = self._study[self._study.HPO_Term_ID == term_id].shape[0]
+        study_n = self._study.shape[0]
+        counts = (study_cnt, study_n, pop_cnt, pop_n)
+        return counts
+
+    def _get_all_possible_terms(self, gene_list):
+        study = self.gaf.entrez_gene_id.isin(gene_list)
+        self._study = study
+        possible_hpo_term_ids = list(study.HPO_Term_ID.drop_duplicates())
+        return possible_hpo_term_ids
     
     def _to_entrez_id(self, gene_list, source):
         gene_list = list(gene_list)

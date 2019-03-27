@@ -3,7 +3,7 @@ import pandas as pd
 
 def hpo_table_header(path):
     with open(path) as f:
-        line = f.readline()
+        line = f.readline().strip()
     columns = line.replace("#Format: ", "").split("<tab>")
     columns = [i.replace("-", "_") for i in columns]
     return columns
