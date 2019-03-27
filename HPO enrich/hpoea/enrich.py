@@ -1,3 +1,5 @@
+from scipy import stats
+
 from hpoea.utils.log import get_logger
 log = get_logger(__name__)
 
@@ -14,13 +16,13 @@ class GSEA(object):
         If not specified, will download it automatically.
     """
     def __init__(self, gaf=None):
-        from scipy import stats
-        if not gaf_file:  # download HPO GAF
+        if not gaf:  # download HPO GAF
             from hpoea.utils.download import get_hpo_gaf
             gaf = get_hpo_gaf()
         from hpoea.utils.parse import parse_hpo_gaf
         self.gaf = parse_hpo_gaf(gaf)
-
+        self._make_hpo_term_table()
+        
     def enrich(self, gene_list, gene_id_source="entrez_id"):
         """Perform gene set enrichment analyze.
 
@@ -38,26 +40,38 @@ class GSEA(object):
         enrichment_table : pandas.DataFrame
         """
         import pandas as pd
+        from tqdm import tqdm
+
         gene_ids = self._to_entrez_id(gene_list, gene_id_source)
         possi_terms = self._get_all_possible_terms(gene_ids)
 
         pvals_uncorr = []
-        counts = []
-        for term_id in possi_terms:  # calculate the p-value of each possible terms
+        all_counts = []
+
+        log.info("Perform gene set enrichment analyze.")
+        log.info("input genes: {}\tpossible terms: {}".format(len(gene_ids), len(possi_terms)))
+
+        for term_id in tqdm(possi_terms):  # calculate the p-value of each possible terms
             counts = self._get_counts(term_id)
-            pval = _calc_pvalue(*counts)
+            pval = self._calc_pvalue(*counts)
             pvals_uncorr.append(pval)
-            counts.append(counts)
-        study_count, n_study, population_count, n_population = zip(*counts)
-        
+            all_counts.append(counts)
+        study_count, n_study, population_count, n_population = zip(*all_counts)
+
+        term_names = list(self.terms.loc[possi_terms].HPO_Term_Name)
         enrichment_table = pd.DataFrame({
             'HPO_term_ID': possi_terms,
+            'HPO_term_name': term_names,
             'study_count': study_count,
             'n_study': n_study,
             'population_count': population_count,
             'n_population': n_population,
             'pvalue': pvals_uncorr,
         })
+        columns = [ 'HPO_term_ID', 'HPO_term_name', 'study_count', 'n_study', 'population_count', 'n_population', 'pvalue']
+        enrichment_table = enrichment_table[columns]  # re-order the table
+
+        log.info("Done")
         self.enrichment_table = enrichment_table
 
     def multiple_test_corretion(self, method='fdr_bh'):
@@ -73,7 +87,7 @@ class GSEA(object):
         from statsmodels.stats.multitest import multipletests
         df = self.enrichment_table
         pvals = df['pvalue']
-        padjs = multipletests(pvals)
+        _, padjs, _, _ = multipletests(pvals)
         df['padj'] = padjs
 
     def _calc_pvalue(self, study_count, study_n, pop_count, pop_n):
@@ -102,7 +116,7 @@ class GSEA(object):
         return counts
 
     def _get_all_possible_terms(self, gene_list):
-        study = self.gaf.entrez_gene_id.isin(gene_list)
+        study = self.gaf[self.gaf.entrez_gene_id.isin(gene_list)]
         self._study = study
         possible_hpo_term_ids = list(study.HPO_Term_ID.drop_duplicates())
         return possible_hpo_term_ids
@@ -123,3 +137,10 @@ class GSEA(object):
             return ids 
         else:
             raise NotImplemented("gene id source only support: entrez_id | entrez_symbol | ensembl")
+
+    def _make_hpo_term_table(self):
+        gaf = self.gaf
+        terms = self.gaf[['HPO_Term_Name', 'HPO_Term_ID']]
+        terms.index = terms.pop('HPO_Term_ID')
+        terms = terms.drop_duplicates()
+        self.terms = terms
