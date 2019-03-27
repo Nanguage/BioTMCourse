@@ -1,7 +1,6 @@
 # Human Phenotype Ontology Gene Set Enrichment Analyze
 
-The task is from the [BioTM Course HZAU](http://xiajingbo.weebly.com/biotmcourse.html).
-I will implement a tookit for doing HPO analyze in this repo.
+Analysis and toolkits about HPO GSEA.
 
 ## Progress:
 
