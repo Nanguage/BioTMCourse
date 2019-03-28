@@ -1,5 +1,10 @@
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, HoverTool
+import networkx as nx
+
+from hpoea.utils.log import get_logger
+
+log = get_logger()
 
 
 def dot_plot(enrich_table, figsize=None, show_items=10, x="gene_ratio", **kwargs):
@@ -56,3 +61,47 @@ def dot_plot(enrich_table, figsize=None, show_items=10, x="gene_ratio", **kwargs
     p.yaxis.axis_label = "HPO Terms"
 
     return p
+
+
+class LineagePlot(object):
+    def __init__(self, obo_file=None):
+        if not gaf:  # download HPO OBO file
+            from hpoea.utils.download import get_hpo_obo
+            obo_file = get_hpo_obo()
+        from hpoea.utils.parse import parse_hpo_obo
+        self.obo = parse_hpo_obo(obo_file)
+
+    def plot(self, nodes, ax=None):
+        import matplotlib.pyplot as plt
+
+        G = self._get_subgraph(nodes)
+        try:
+            from networkx.drawing.nx_agraph import graphviz_layout
+            pos = graphviz_layout(G)
+        except ImportError as e:
+            log.warning("pygraphviz is not installed using spring layout.")
+            from networkx import spring_layout
+            pos = spring_layout(G)
+
+        if not ax:
+            fig, ax = plt.subplots()
+        
+        nx.draw_networkx(G, pos=pos, ax=ax)
+
+        return ax
+
+    def _get_subgraph(self, nodes):
+        G = self.obo
+        descendants = set()
+        ancestors = set()
+        for n in nodes:
+            des_ = nx.descendants(G, n)
+            descendants.update(des_)
+            ans_ = nx.ancestors(G, n)
+            ancestors.update(ans_)
+        all_nodes = set()
+        all_nodes.update(set(nodes))
+        all_nodes.update(descendants)
+        all_nodes.update(ancestors)
+        subg = G.subgraph(all_nodes)
+        return subg
