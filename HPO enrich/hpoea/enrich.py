@@ -22,6 +22,7 @@ class GSEA(object):
         from hpoea.utils.parse import parse_hpo_gaf
         self.gaf = parse_hpo_gaf(gaf)
         self._make_hpo_term_table()
+        self.filter_count = 0  # time of filter
         
     def enrich(self, gene_list, gene_id_source="entrez_id"):
         """Perform gene set enrichment analyze.
@@ -40,6 +41,7 @@ class GSEA(object):
         enrichment_table : pandas.DataFrame
         """
         import pandas as pd
+        from collections import OrderedDict
         from tqdm import tqdm
 
         gene_ids = self._to_entrez_id(gene_list, gene_id_source)
@@ -47,29 +49,33 @@ class GSEA(object):
 
         pvals_uncorr = []
         all_counts = []
+        related_genes = []
 
         log.info("Perform gene set enrichment analyze.")
         log.info("input genes: {}\tpossible terms: {}".format(len(gene_ids), len(possi_terms)))
 
         for term_id in tqdm(possi_terms):  # calculate the p-value of each possible terms
+            genes = list(self.gaf[self.gaf.HPO_Term_ID == term_id].entrez_gene_symbol)
+            related_genes.append(genes)
             counts = self._get_counts(term_id)
+            all_counts.append(counts)
             pval = self._calc_pvalue(*counts)
             pvals_uncorr.append(pval)
-            all_counts.append(counts)
         study_count, n_study, population_count, n_population = zip(*all_counts)
 
         term_names = list(self.terms.loc[possi_terms].HPO_Term_Name)
-        enrichment_table = pd.DataFrame({
+        enrichment_table = pd.DataFrame(OrderedDict({
             'HPO_term_ID': possi_terms,
             'HPO_term_name': term_names,
+            'gene_num': [len(genes) for genes in related_genes],
             'study_count': study_count,
             'n_study': n_study,
             'population_count': population_count,
             'n_population': n_population,
             'pvalue': pvals_uncorr,
-        })
-        columns = [ 'HPO_term_ID', 'HPO_term_name', 'study_count', 'n_study', 'population_count', 'n_population', 'pvalue']
-        enrichment_table = enrichment_table[columns]  # re-order the table
+            'padj': None,
+            'related_genes': [" ".join(genes) for genes in related_genes],
+        }))
 
         log.info("Done")
         self.enrichment_table = enrichment_table
@@ -84,11 +90,29 @@ class GSEA(object):
             All supported method list see `statsmodels.stats.multitest.multipletests`:
                 http://www.statsmodels.org/devel/generated/statsmodels.stats.multitest.multipletests.html#statsmodels.stats.multitest.multipletests
         """
+        assert hasattr(self, "enrichment_table"), "`GSEA.enrich` method should be called in advance."
+        log.info("Multiple test correction with {} method.".format(method))
         from statsmodels.stats.multitest import multipletests
         df = self.enrichment_table
         pvals = df['pvalue']
-        _, padjs, _, _ = multipletests(pvals)
+        _, padjs, _, _ = multipletests(pvals, method=method)
         df['padj'] = padjs
+        log.info("Done")
+
+    def filter(self, by="pvalue", how="<=", threshold=0.05):
+        """Filter the enrichment result table with some condition.
+        For example `pvalue <= 0.05`.
+        The table before filter will save to the attribute `self.before_filter`.
+        """
+        assert hasattr(self, "enrichment_table"), "`GSEA.enrich` method should be called in advance."
+        log.info("filter the enrichment result with condition: {} {} {}".format(by, how, threshold))
+        before = self.enrichment_table
+        if self.filter_count == 0:
+            self.original_enrich_table = before
+        self.before_filter = before
+        after = eval("before[before['{}'] {} {}]".format(by, how, threshold))
+        self.enrichment_table = after
+        self.filter_count += 1
 
     def _calc_pvalue(self, study_count, study_n, pop_count, pop_n):
         """Calculate uncorrected p-value.
