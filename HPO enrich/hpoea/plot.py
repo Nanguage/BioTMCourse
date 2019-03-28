@@ -100,6 +100,13 @@ class LineagePlot(object):
             node_color='red',
             node_size=700,
             alpha=0.5)
+        if 'HP:0000001' in G.nodes:
+            nx.draw_networkx_nodes(G, pos=pos,
+                nodelist=['HP:0000001'],
+                node_color='yellow',
+                node_size=800,
+                alpha=0.8)
+
         nx.draw_networkx_edges(G, pos=pos)
         nx.draw_networkx_labels(G, pos=pos)
 
