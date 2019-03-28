@@ -37,20 +37,65 @@
 
 \begin{frame}
     \frametitle{HPO dataset}
-    blabla
-    HPO dataset\footcite{kohler2018expansion}
+
+    The Human Phenotype Ontology (HPO)\footcite{kohler2018expansion} provides a standardized vocabulary of phenotypic abnormalities encountered in human disease. Each term in the HPO describes a phenotypic abnormality, such as Atrial septal defect.
 \end{frame}
 
 \section{Method}
 
 \begin{frame}
     \frametitle{Enrichment}
-    bla
+
+    \includegraphics[scale=0.2]{mm.png}
+
+    \footnote{https://www.youtube.com/watch?v=udyAvvaMjfM}
+    
 \end{frame}
 
 \begin{frame}
-    \frametitle{Implementation}
+
+    \begin{table}[]
+    \begin{tabular}{lllll}
+                 & succeed & failed & Total &  \\
+    studying     & i       & k-i    & k     &  \\
+    non-studying & m-i     &        & N-k   &  \\
+    Total        & m       & N-m    & N     & 
+    \end{tabular}
+    \end{table}
+
+    \frametitle{Fisher's exact test}
+    The probability of hypergeometric distribution.
+    \begin{equation}
+        p(x=i) = \frac{ {m \choose i} { {N-m} \choose {k-i} } }{{N \choose k}}
+    \end{equation}
+
+    \begin{equation}
+        pvalue = \sum_{x=i}^{k}{p(x)}
+    \end{equation}
     
+
+\end{frame}
+
+\section{Implementation}
+
+\begin{frame}
+    \frametitle{Implementation}
+    A Python package for HPO enrichment analyze.
+
+    \small{
+    \url{https://github.com/Nanguage/BioTMCourse/tree/master/HPO\%20enrich}
+    }
+    
+\end{frame}
+
+\begin{frame}
+    \frametitle{An HPO GSEA example}
+
+    SAGD\footcite{shi2018sagd} gene samples, SAGD\_00055(human hypothalamus tissue).
+
+    \tiny{
+    \url{https://nanguage.github.io/examples/hpo_enrich/example_sagd_00055.html}
+    }
 \end{frame}
 
 \section{}
