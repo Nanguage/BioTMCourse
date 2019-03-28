@@ -10,3 +10,21 @@ Analysis and toolkit about HPO GSEA.
 - <del>OBO file parse, and visualization.</del>
 - Design and perform some HPO GSEA expriments.
 - Discuss the disadvantage of basic method and try to make improvement.
+
+## About Toolkit
+
+### Features
+
++ HPO GSEA.
++ Dot plot for enrichment.
++ OBO parse and lineage plot.
+
+### Installation
+
+Python version >= 3.5 is required.
+
+```bash
+$ git clone https://github.com/Nanguage/BioTMCourse.git
+$ cd HPO\ enrich/
+$ python setup.py install
+```

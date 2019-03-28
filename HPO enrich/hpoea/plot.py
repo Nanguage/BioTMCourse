@@ -49,6 +49,7 @@ def dot_plot(enrich_table, figsize=None, show_items=10, x="gene_ratio", **kwargs
     p.add_tools(HoverTool(
         tooltips=[
             ( 'HPO_term_ID', '@HPO_term_ID' ),
+            ( 'gene_num', '@gene_num' ),
             ( 'gene_ratio',   '@gene_ratio{%0.2f}' ),
             ( 'background_ratio',   '@background_ratio{%0.2f}' ),
             ( 'odd_ratio',   '@odd_ratio{0.00}' ),
