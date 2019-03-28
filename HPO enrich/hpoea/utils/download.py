@@ -25,6 +25,14 @@ def download_file(url, path):
     log.info("Data download done, file saved to: {}".format(path))
     return path
 
+def get_file(url, file_name, file_dir):
+    make_data_dir(file_dir)
+    path = os.path.join(file_dir, file_name)
+    if os.path.exists(path):
+        return path
+    else:
+        return download_file(url, path)
+
 HPO_GAF_URL = "http://compbio.charite.de/jenkins/job/hpo.annotations.monthly/lastSuccessfulBuild/artifact/annotation/ALL_SOURCES_ALL_FREQUENCIES_genes_to_phenotype.txt"
 
 def get_hpo_gaf(url=HPO_GAF_URL, file_name="gaf.txt", file_dir=DATA_DIR):
@@ -34,9 +42,15 @@ def get_hpo_gaf(url=HPO_GAF_URL, file_name="gaf.txt", file_dir=DATA_DIR):
     More detail see:
         https://hpo.jax.org/app/download/annotation
     """
-    make_data_dir(file_dir)
-    path = os.path.join(file_dir, file_name)
-    if os.path.exists(path):
-        return path
-    else:
-        return download_file(url, path)
+    return get_file(url, file_name, file_dir)
+
+HPO_OBO_URL = "https://raw.githubusercontent.com/obophenotype/human-phenotype-ontology/master/hp.obo"
+
+def get_hpo_obo(url=HPO_OBO_URL, file_name="hpo.obo", file_dir=DATA_DIR):
+    """Download the HPO OBO file
+    It record the Ontology information about Human Phenotype.
+
+    More detail see:
+        https://hpo.jax.org/app/download/ontology
+    """
+    return get_file(url, file_name, file_dir)
