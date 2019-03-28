@@ -4,7 +4,7 @@ import networkx as nx
 
 from hpoea.utils.log import get_logger
 
-log = get_logger()
+log = get_logger(__name__)
 
 
 def dot_plot(enrich_table, figsize=None, show_items=10, x="gene_ratio", **kwargs):
@@ -64,14 +64,16 @@ def dot_plot(enrich_table, figsize=None, show_items=10, x="gene_ratio", **kwargs
 
 
 class LineagePlot(object):
+    """Plot the tree structure of OBO file
+    """
     def __init__(self, obo_file=None):
-        if not gaf:  # download HPO OBO file
+        if not obo_file:  # download HPO OBO file
             from hpoea.utils.download import get_hpo_obo
             obo_file = get_hpo_obo()
         from hpoea.utils.parse import parse_hpo_obo
         self.obo = parse_hpo_obo(obo_file)
 
-    def plot(self, nodes, ax=None):
+    def plot(self, nodes, ax=None, **kwargs):
         import matplotlib.pyplot as plt
 
         G = self._get_subgraph(nodes)
@@ -83,15 +85,28 @@ class LineagePlot(object):
             from networkx import spring_layout
             pos = spring_layout(G)
 
-        if not ax:
+        if not ax:  # create an matplotlib ax
             fig, ax = plt.subplots()
         
-        nx.draw_networkx(G, pos=pos, ax=ax)
+        others = list(set(list(self._descendants)+list(self._ancestors)))
+        nx.draw_networkx_nodes(G, pos=pos,
+            nodelist=others,
+            node_color='grey',
+            node_size=500,
+            alpha=0.6)
+        nx.draw_networkx_nodes(G, pos=pos,
+            nodelist=list(self._nodes),
+            node_color='red',
+            node_size=700,
+            alpha=0.5)
+        nx.draw_networkx_edges(G, pos=pos)
+        nx.draw_networkx_labels(G, pos=pos)
 
         return ax
 
     def _get_subgraph(self, nodes):
         G = self.obo
+        self._nodes = set(nodes)
         descendants = set()
         ancestors = set()
         for n in nodes:
@@ -99,8 +114,10 @@ class LineagePlot(object):
             descendants.update(des_)
             ans_ = nx.ancestors(G, n)
             ancestors.update(ans_)
+        self._ancestors = ancestors - self._nodes
+        self._descendants = descendants - self._nodes
         all_nodes = set()
-        all_nodes.update(set(nodes))
+        all_nodes.update(self._nodes)
         all_nodes.update(descendants)
         all_nodes.update(ancestors)
         subg = G.subgraph(all_nodes)

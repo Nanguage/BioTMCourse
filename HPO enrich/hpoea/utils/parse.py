@@ -25,5 +25,5 @@ def parse_hpo_obo(path):
     return a network MultiDiGraph object
     """
     import obonet
-    graph = obonet.read(path)
+    graph = obonet.read_obo(path)
     return graph
