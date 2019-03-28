@@ -4,3 +4,6 @@ pandas>=0.22.0
 mygene>=3.0.0
 statsmodels>=0.8.0
 matplotlib>=3.0.1
+networkx>=1.11
+bokeh>=0.12.14
+obonet>=0.2.5
