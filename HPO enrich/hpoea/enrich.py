@@ -64,6 +64,7 @@ class GSEA(object):
         study_count, n_study, population_count, n_population = zip(*all_counts)
 
         term_names = list(self.terms.loc[possi_terms].HPO_Term_Name)
+        gene_ratio, background_ratio, odd_ratio = self._get_ratios(all_counts)
         enrichment_table = pd.DataFrame(OrderedDict({
             'HPO_term_ID': possi_terms,
             'HPO_term_name': term_names,
@@ -72,10 +73,14 @@ class GSEA(object):
             'n_study': n_study,
             'population_count': population_count,
             'n_population': n_population,
+            'gene_ratio': gene_ratio,
+            'background_ratio': background_ratio,
+            'odd_ratio': odd_ratio,
             'pvalue': pvals_uncorr,
             'padj': None,
             'related_genes': [" ".join(genes) for genes in related_genes],
         }))
+        enrichment_table = enrichment_table.sort_values(by='pvalue')
 
         log.info("Done")
         self.enrichment_table = enrichment_table
@@ -114,6 +119,14 @@ class GSEA(object):
         self.enrichment_table = after
         self.filter_count += 1
 
+    def _get_ratios(self, counts):
+        from pandas import Series
+        study_count, n_study, population_count, n_population = [Series(i) for i in zip(*counts)]
+        gene_ratio = study_count / n_study
+        background_ratio = population_count / n_population
+        odd_ratio = gene_ratio / background_ratio
+        return list(gene_ratio), list(background_ratio), list(odd_ratio)
+
     def _calc_pvalue(self, study_count, study_n, pop_count, pop_n):
         """Calculate uncorrected p-value.
 
@@ -132,10 +145,10 @@ class GSEA(object):
 
     def _get_counts(self, term_id):
         """Get the counts value used for fisher exact test."""
-        pop_cnt = self.gaf[self.gaf.HPO_Term_ID == term_id].shape[0]
-        pop_n = self.gaf.shape[0]
         study_cnt = self._study[self._study.HPO_Term_ID == term_id].shape[0]
         study_n = self._study.shape[0]
+        pop_cnt = self.gaf[self.gaf.HPO_Term_ID == term_id].shape[0]
+        pop_n = self.gaf.shape[0]
         counts = (study_cnt, study_n, pop_cnt, pop_n)
         return counts
 
