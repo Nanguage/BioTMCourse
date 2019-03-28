@@ -52,4 +52,7 @@ def dot_plot(enrich_table, figsize=None, show_items=10, x="gene_ratio", **kwargs
         ]
     ))
 
+    p.xaxis.axis_label = " ".join([i.capitalize() for i in x.split("_")])
+    p.yaxis.axis_label = "HPO Terms"
+
     return p
