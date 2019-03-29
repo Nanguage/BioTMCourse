@@ -28,3 +28,8 @@ $ git clone https://github.com/Nanguage/BioTMCourse.git
 $ cd HPO\ enrich/
 $ python setup.py install
 ```
+
+## Link
+
++ [An example on SAGD data](https://nanguage.github.io/examples/hpo_enrich/example_sagd_00055.html).
++ [Course talk slides](https://github.com/Nanguage/BioTMCourse/blob/master/HPO%20enrich/doc/slides/slides.pdf)
